@@ -24,34 +24,44 @@ function App() {
 
   const [items, setItems] = useState([]);
 
+  const [filterType, setFilterType] = useState("all");
+
+  const [itemSearch, setItemSearch] = useState("");
+
+  const [isChanged,setChanged] = useState(false);
+
   // Interact with local storage
 
   useEffect(() => {
-    const items = JSON.parse(localStorage.getItem('todo'));
-    if (items) {
-     setItems(items);
+    const itemsNew = JSON.parse(localStorage.getItem('todo'));
+    if (itemsNew) {
+     setItems(itemsNew);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('todo', JSON.stringify(items));
-  }, [items]);
+    if(isChanged){
+      localStorage.setItem('todo', JSON.stringify(items));
+      setChanged(false);
+    }
+  }, [isChanged, items]);
 
-  const [filterType, setFilterType] = useState("all");
-
-  const [itemSearch, setItemSearch] = useState("");
+  // Event Handlers
 
   const handleToDoChange = (event) => {
     setItemToDo(event.target.value);
   };
 
   const handleAddItem = () => {
-    const newItem = { key: myNewID(), label: itemToDo };
+    if(itemToDo !== "") {
+      const newItem = { key: myNewID(), label: itemToDo };
 
-    // state call back
-    setItems((prevItem) => [newItem, ...prevItem]);
+      // state call back
+      setItems((prevItem) => [newItem, ...prevItem]);
 
-    setItemToDo("");
+      setChanged(true);
+      setItemToDo("");
+    }
   };
 
   const handleItemDone = ({ key }) => {
@@ -62,6 +72,8 @@ function App() {
         } else return item;
       })
     );
+
+    setChanged(true);
   };
 
   const handleItemDelete = ({ key }) => {
@@ -71,6 +83,8 @@ function App() {
     const rightSide = items.slice(index + 1, items.length);
 
     setItems((prevItem) => [...leftSide, ...rightSide]);
+
+    setChanged(true);
   };
 
   const handleFilterChange = ({ type }) => {
@@ -85,36 +99,27 @@ function App() {
         } else return item;
       })
     );
+
+    setChanged(true);
   };
+
+  const handleItemSearch = (event) => {
+    setItemSearch(event.target.value);
+  };
+
+  // Variables
 
   const moreToDo = items.filter((item) => !item.done).length;
   const doneToDo = items.length - moreToDo;
 
+  // items either full either filtered
+  const searchedArray = items.filter((item) => item.label.toLowerCase().includes(itemSearch.toLowerCase()));
   const filteredArray =
-    filterType === "all"
-      ? items
+        filterType === "all"
+      ? searchedArray
       : filterType === "done"
-      ? items.filter((item) => item.done)
-      : filterType === "search"
-      ? search()
-      : items.filter((item) => !item.done);
-
-  const handleItemSearch = (event) => {
-    setItemSearch(event.target.value);
-    setFilterType("search");
-  };
-
-  function search() {
-    const keyword = itemSearch.toLowerCase();
-    let searchedArray = [];
-    if (keyword != "") {
-      searchedArray = items.filter((item) => {
-        return item.label.toLowerCase().includes(keyword);
-      });
-    }
-
-    return searchedArray;
-  }
+      ? searchedArray.filter((item) => item.done)
+      : searchedArray.filter((item) => !item.done);
 
   return (
     <div className="todo-app">
